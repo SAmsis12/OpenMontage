@@ -30,6 +30,7 @@ def test_bridge_never_discovers_tools_reads_dotenv_calls_network_shell_or_writes
         encoding="utf-8",
     )
     before = {path.name: path.read_bytes() for path in project.iterdir()}
+    modules_before = set(sys.modules)
 
     def forbidden(*args, **kwargs):
         raise AssertionError("provider, network, or subprocess call attempted")
@@ -41,6 +42,12 @@ def test_bridge_never_discovers_tools_reads_dotenv_calls_network_shell_or_writes
     monkeypatch.setattr(os, "system", forbidden)
 
     real_open = builtins.open
+    real_import = builtins.__import__
+
+    def guarded_import(name, *args, **kwargs):
+        if name == "dotenv" or name.startswith("tools.tool_registry") or name.startswith("tools.base_tool"):
+            raise AssertionError("tool registry or dotenv import attempted")
+        return real_import(name, *args, **kwargs)
 
     def guarded_open(file, mode="r", *args, **kwargs):
         path = os.fspath(file)
@@ -49,6 +56,7 @@ def test_bridge_never_discovers_tools_reads_dotenv_calls_network_shell_or_writes
         return real_open(file, mode, *args, **kwargs)
 
     monkeypatch.setattr(builtins, "open", guarded_open)
+    monkeypatch.setattr(builtins, "__import__", guarded_import)
 
     calls = {
         "capabilities": {},
@@ -70,6 +78,7 @@ def test_bridge_never_discovers_tools_reads_dotenv_calls_network_shell_or_writes
 
     after = {path.name: path.read_bytes() for path in project.iterdir()}
     assert after == before
-    assert "tools.tool_registry" not in sys.modules
-    assert "tools.base_tool" not in sys.modules
-    assert "dotenv" not in sys.modules
+    newly_loaded = set(sys.modules) - modules_before
+    assert "tools.tool_registry" not in newly_loaded
+    assert "tools.base_tool" not in newly_loaded
+    assert "dotenv" not in newly_loaded
