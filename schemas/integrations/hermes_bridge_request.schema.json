@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "openmontage/integrations/hermes_bridge_request",
+  "title": "Hermes Bridge v1 Request",
+  "$defs": {
+    "envelope": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "1.0"
+        },
+        "request_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "operation": {
+          "enum": [
+            "capabilities",
+            "status",
+            "preview",
+            "cost",
+            "approval"
+          ]
+        },
+        "arguments": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "version",
+        "request_id",
+        "operation",
+        "arguments"
+      ],
+      "additionalProperties": false
+    },
+    "capabilitiesArgs": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "statusArgs": {
+      "type": "object",
+      "properties": {
+        "project_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+        }
+      },
+      "required": [
+        "project_id"
+      ],
+      "additionalProperties": false
+    },
+    "previewArgs": {
+      "type": "object",
+      "properties": {
+        "project_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+        },
+        "pipeline_type": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$"
+        },
+        "target_stage": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$"
+        },
+        "proposed_operations": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "properties": {
+              "tool": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$"
+              },
+              "operation": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$"
+              },
+              "estimated_usd": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1000000
+              }
+            },
+            "required": [
+              "tool",
+              "operation",
+              "estimated_usd"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "project_id",
+        "pipeline_type",
+        "target_stage",
+        "proposed_operations"
+      ],
+      "additionalProperties": false
+    },
+    "costArgs": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "project_id": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+            }
+          },
+          "required": [
+            "project_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "project_id": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+            },
+            "proposed_cost_usd": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1000000
+            },
+            "tool": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$"
+            }
+          },
+          "required": [
+            "project_id",
+            "proposed_cost_usd",
+            "tool"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "approvalArgs": {
+      "type": "object",
+      "properties": {
+        "project_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+        },
+        "stage": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$"
+        }
+      },
+      "required": [
+        "project_id",
+        "stage"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/envelope"
+    },
+    {
+      "oneOf": [
+        {
+          "properties": {
+            "operation": {
+              "const": "capabilities"
+            },
+            "arguments": {
+              "$ref": "#/$defs/capabilitiesArgs"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operation": {
+              "const": "status"
+            },
+            "arguments": {
+              "$ref": "#/$defs/statusArgs"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operation": {
+              "const": "preview"
+            },
+            "arguments": {
+              "$ref": "#/$defs/previewArgs"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operation": {
+              "const": "cost"
+            },
+            "arguments": {
+              "$ref": "#/$defs/costArgs"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operation": {
+              "const": "approval"
+            },
+            "arguments": {
+              "$ref": "#/$defs/approvalArgs"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

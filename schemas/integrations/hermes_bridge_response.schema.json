@@ -1,0 +1,855 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "openmontage/integrations/hermes_bridge_response",
+  "title": "Hermes Bridge v1 Response",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "1.0"
+        },
+        "request_id": {
+          "type": "string",
+          "pattern": "^(unknown|[A-Za-z0-9][A-Za-z0-9._:-]{0,127})$"
+        },
+        "operation": {
+          "enum": [
+            "unknown",
+            "capabilities",
+            "status",
+            "preview",
+            "cost",
+            "approval"
+          ]
+        },
+        "ok": {
+          "const": false
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "enum": [
+                "INVALID_JSON",
+                "INPUT_TOO_LARGE",
+                "INVALID_REQUEST",
+                "INVALID_PROJECT_ID",
+                "UNKNOWN_PIPELINE",
+                "PROJECT_UNREADABLE",
+                "EVIDENCE_TOO_LARGE",
+                "EVIDENCE_INVALID",
+                "DEADLINE_EXCEEDED",
+                "INTERNAL_FAILURE"
+              ]
+            },
+            "message": {
+              "const": "request rejected"
+            },
+            "retryable": {
+              "const": false
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "version",
+        "request_id",
+        "operation",
+        "ok",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "1.0"
+        },
+        "request_id": {
+          "type": "string",
+          "pattern": "^(unknown|[A-Za-z0-9][A-Za-z0-9._:-]{0,127})$"
+        },
+        "operation": {
+          "const": "capabilities"
+        },
+        "ok": {
+          "const": true
+        },
+        "result": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "const": "read_only_dry_run"
+            },
+            "operations": {
+              "const": [
+                "capabilities",
+                "status",
+                "preview",
+                "cost",
+                "approval"
+              ]
+            },
+            "guarantees": {
+              "type": "object",
+              "properties": {
+                "writes": {
+                  "const": false
+                },
+                "tool_execution": {
+                  "const": false
+                },
+                "provider_calls": {
+                  "const": false
+                },
+                "secret_reads": {
+                  "const": false
+                },
+                "shell": {
+                  "const": false
+                }
+              },
+              "required": [
+                "writes",
+                "tool_execution",
+                "provider_calls",
+                "secret_reads",
+                "shell"
+              ],
+              "additionalProperties": false
+            },
+            "receipt": {
+              "const": "ephemeral_preview_attestation"
+            },
+            "tool_availability": {
+              "const": "unknown_not_probed"
+            },
+            "pipelines": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$"
+                  },
+                  "category": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$"
+                  },
+                  "stability": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$"
+                  }
+                },
+                "required": [
+                  "name",
+                  "category",
+                  "stability"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "mode",
+            "operations",
+            "guarantees",
+            "receipt",
+            "tool_availability",
+            "pipelines"
+          ],
+          "additionalProperties": false
+        },
+        "receipt": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "dry_run"
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "persisted": {
+              "const": false
+            },
+            "execution": {
+              "const": "not_started"
+            },
+            "approval_granted": {
+              "const": false
+            }
+          },
+          "required": [
+            "kind",
+            "digest",
+            "persisted",
+            "execution",
+            "approval_granted"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "version",
+        "request_id",
+        "operation",
+        "ok",
+        "result",
+        "receipt"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "1.0"
+        },
+        "request_id": {
+          "type": "string",
+          "pattern": "^(unknown|[A-Za-z0-9][A-Za-z0-9._:-]{0,127})$"
+        },
+        "operation": {
+          "const": "status"
+        },
+        "ok": {
+          "const": true
+        },
+        "result": {
+          "type": "object",
+          "properties": {
+            "project_id": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+            },
+            "existence": {
+              "enum": [
+                "absent",
+                "uninitialized",
+                "initialized"
+              ]
+            },
+            "pipeline_type": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "current_stage": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "terminal": {
+              "type": "boolean"
+            },
+            "evidence": {
+              "enum": [
+                "complete",
+                "degraded",
+                "unavailable"
+              ]
+            },
+            "stages": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$"
+                  },
+                  "status": {
+                    "enum": [
+                      "pending",
+                      "in_progress",
+                      "awaiting_human",
+                      "completed",
+                      "failed",
+                      "unknown"
+                    ]
+                  },
+                  "gated": {
+                    "type": "boolean"
+                  },
+                  "approval": {
+                    "enum": [
+                      "not_required",
+                      "required",
+                      "satisfied",
+                      "unknown"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "status",
+                  "gated",
+                  "approval"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "cost": {
+              "type": "object",
+              "properties": {
+                "spent_usd": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "reserved_usd": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "remaining_usd": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "evidence": {
+                  "enum": [
+                    "cost_log",
+                    "checkpoint_snapshot",
+                    "unavailable"
+                  ]
+                }
+              },
+              "required": [
+                "spent_usd",
+                "reserved_usd",
+                "remaining_usd",
+                "evidence"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "project_id",
+            "existence",
+            "pipeline_type",
+            "current_stage",
+            "terminal",
+            "evidence",
+            "stages",
+            "cost"
+          ],
+          "additionalProperties": false
+        },
+        "receipt": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "dry_run"
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "persisted": {
+              "const": false
+            },
+            "execution": {
+              "const": "not_started"
+            },
+            "approval_granted": {
+              "const": false
+            }
+          },
+          "required": [
+            "kind",
+            "digest",
+            "persisted",
+            "execution",
+            "approval_granted"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "version",
+        "request_id",
+        "operation",
+        "ok",
+        "result",
+        "receipt"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "1.0"
+        },
+        "request_id": {
+          "type": "string",
+          "pattern": "^(unknown|[A-Za-z0-9][A-Za-z0-9._:-]{0,127})$"
+        },
+        "operation": {
+          "const": "preview"
+        },
+        "ok": {
+          "const": true
+        },
+        "result": {
+          "type": "object",
+          "properties": {
+            "dry_run": {
+              "const": true
+            },
+            "project": {
+              "type": "object",
+              "properties": {
+                "exists": {
+                  "type": "boolean"
+                },
+                "would_initialize": {
+                  "type": "boolean"
+                },
+                "layout": {
+                  "const": [
+                    "artifacts",
+                    "assets/images",
+                    "assets/video",
+                    "assets/audio",
+                    "assets/music",
+                    "renders"
+                  ]
+                }
+              },
+              "required": [
+                "exists",
+                "would_initialize",
+                "layout"
+              ],
+              "additionalProperties": false
+            },
+            "pipeline": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$"
+                },
+                "stages": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$"
+                  }
+                },
+                "next_stage": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "stages",
+                "next_stage"
+              ],
+              "additionalProperties": false
+            },
+            "tools": {
+              "type": "object",
+              "properties": {
+                "required": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$"
+                  },
+                  "uniqueItems": true
+                },
+                "optional": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$"
+                  },
+                  "uniqueItems": true
+                },
+                "availability": {
+                  "const": "unknown_not_probed"
+                }
+              },
+              "required": [
+                "required",
+                "optional",
+                "availability"
+              ],
+              "additionalProperties": false
+            },
+            "cost": {
+              "type": "object",
+              "properties": {
+                "estimate_usd": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "estimate_source": {
+                  "enum": [
+                    "request_provided",
+                    "unavailable"
+                  ]
+                },
+                "would_reserve": {
+                  "const": false
+                },
+                "would_spend": {
+                  "const": false
+                }
+              },
+              "required": [
+                "estimate_usd",
+                "estimate_source",
+                "would_reserve",
+                "would_spend"
+              ],
+              "additionalProperties": false
+            },
+            "approval": {
+              "type": "object",
+              "properties": {
+                "required": {
+                  "type": "boolean"
+                },
+                "reasons": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "first_paid_tool",
+                      "single_action_threshold",
+                      "human_gate"
+                    ]
+                  },
+                  "uniqueItems": true
+                },
+                "granted": {
+                  "const": false
+                }
+              },
+              "required": [
+                "required",
+                "reasons",
+                "granted"
+              ],
+              "additionalProperties": false
+            },
+            "effects": {
+              "const": []
+            }
+          },
+          "required": [
+            "dry_run",
+            "project",
+            "pipeline",
+            "tools",
+            "cost",
+            "approval",
+            "effects"
+          ],
+          "additionalProperties": false
+        },
+        "receipt": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "dry_run"
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "persisted": {
+              "const": false
+            },
+            "execution": {
+              "const": "not_started"
+            },
+            "approval_granted": {
+              "const": false
+            }
+          },
+          "required": [
+            "kind",
+            "digest",
+            "persisted",
+            "execution",
+            "approval_granted"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "version",
+        "request_id",
+        "operation",
+        "ok",
+        "result",
+        "receipt"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "1.0"
+        },
+        "request_id": {
+          "type": "string",
+          "pattern": "^(unknown|[A-Za-z0-9][A-Za-z0-9._:-]{0,127})$"
+        },
+        "operation": {
+          "const": "cost"
+        },
+        "ok": {
+          "const": true
+        },
+        "result": {
+          "type": "object",
+          "properties": {
+            "current": {
+              "type": "object",
+              "properties": {
+                "spent_usd": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "reserved_usd": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "remaining_usd": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "evidence": {
+                  "enum": [
+                    "cost_log",
+                    "checkpoint_snapshot",
+                    "unavailable"
+                  ]
+                }
+              },
+              "required": [
+                "spent_usd",
+                "reserved_usd",
+                "remaining_usd",
+                "evidence"
+              ],
+              "additionalProperties": false
+            },
+            "proposal": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "estimated_usd": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1000000
+                    },
+                    "estimate_source": {
+                      "const": "request_provided"
+                    },
+                    "would_exceed_usable_budget": {
+                      "type": "boolean"
+                    },
+                    "would_require_approval": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "estimated_usd",
+                    "estimate_source",
+                    "would_exceed_usable_budget",
+                    "would_require_approval"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "mutation": {
+              "const": "none"
+            }
+          },
+          "required": [
+            "current",
+            "proposal",
+            "mutation"
+          ],
+          "additionalProperties": false
+        },
+        "receipt": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "dry_run"
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "persisted": {
+              "const": false
+            },
+            "execution": {
+              "const": "not_started"
+            },
+            "approval_granted": {
+              "const": false
+            }
+          },
+          "required": [
+            "kind",
+            "digest",
+            "persisted",
+            "execution",
+            "approval_granted"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "version",
+        "request_id",
+        "operation",
+        "ok",
+        "result",
+        "receipt"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "1.0"
+        },
+        "request_id": {
+          "type": "string",
+          "pattern": "^(unknown|[A-Za-z0-9][A-Za-z0-9._:-]{0,127})$"
+        },
+        "operation": {
+          "const": "approval"
+        },
+        "ok": {
+          "const": true
+        },
+        "result": {
+          "type": "object",
+          "properties": {
+            "stage": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "source": {
+              "const": "pipeline_manifest"
+            },
+            "state": {
+              "enum": [
+                "pending",
+                "in_progress",
+                "awaiting_human",
+                "completed",
+                "failed",
+                "unknown"
+              ]
+            },
+            "satisfied": {
+              "type": "boolean"
+            },
+            "can_advance": {
+              "type": "boolean"
+            },
+            "mutation": {
+              "const": "none"
+            }
+          },
+          "required": [
+            "stage",
+            "required",
+            "source",
+            "state",
+            "satisfied",
+            "can_advance",
+            "mutation"
+          ],
+          "additionalProperties": false
+        },
+        "receipt": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "dry_run"
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "persisted": {
+              "const": false
+            },
+            "execution": {
+              "const": "not_started"
+            },
+            "approval_granted": {
+              "const": false
+            }
+          },
+          "required": [
+            "kind",
+            "digest",
+            "persisted",
+            "execution",
+            "approval_granted"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "version",
+        "request_id",
+        "operation",
+        "ok",
+        "result",
+        "receipt"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}
