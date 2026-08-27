@@ -13,7 +13,12 @@ from lib.pipeline_loader import (
 )
 
 from .contract import BridgeError
-from .readers import ProjectEvidence, read_identity_readiness, read_project
+from .readers import (
+    ProjectEvidence,
+    read_identity_readiness,
+    read_project,
+    validate_project_id,
+)
 
 OPERATIONS = [
     "capabilities",
@@ -34,6 +39,7 @@ PROJECT_LAYOUT = [
 PIPELINE_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$")
 STATUS_VALUES = {"pending", "in_progress", "awaiting_human", "completed", "failed"}
 IDENTITY_KEYS = {
+    "project_id",
     "contract_version",
     "foundation_status",
     "world_sample_approved",
@@ -281,8 +287,13 @@ def identity_readiness_result(projects_root: Path, project_id: str) -> dict[str,
         return dict(IDENTITY_DEFAULT)
     if set(evidence) != IDENTITY_KEYS:
         raise BridgeError("EVIDENCE_INVALID")
+    try:
+        validate_project_id(evidence["project_id"])
+    except BridgeError:
+        raise BridgeError("EVIDENCE_INVALID") from None
     if (
-        evidence["contract_version"] != "1.0"
+        evidence["project_id"] != project_id
+        or evidence["contract_version"] != "1.0"
         or not isinstance(evidence["foundation_status"], str)
         or evidence["foundation_status"] not in FOUNDATION_STATUSES
         or any(

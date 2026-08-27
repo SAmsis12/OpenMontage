@@ -44,6 +44,10 @@ READY = {
 }
 
 
+def _bound(value: dict, project_id: object = "film") -> dict:
+    return {"project_id": project_id, **value}
+
+
 def _request(arguments: object = None) -> dict:
     return {
         "version": "1.0",
@@ -137,7 +141,7 @@ def test_identity_projection_accepts_closed_foundation_states(
         **DEFAULT,
         "foundation_status": foundation_status,
     }
-    _write_evidence(tmp_path, expected)
+    _write_evidence(tmp_path, _bound(expected))
     assert _result(tmp_path) == expected
 
 
@@ -148,13 +152,35 @@ def test_identity_missing_project_or_evidence_is_conservative_default(tmp_path: 
 
 
 def test_identity_ready_evidence_enables_bulk_and_receipt_is_deterministic(tmp_path: Path) -> None:
-    _write_evidence(tmp_path, READY)
+    _write_evidence(tmp_path, _bound(READY))
     request = parse_request(_request())
     first = handle_request(request, projects_root=tmp_path)
     second = handle_request(request, projects_root=tmp_path)
     assert first == second
     assert first["result"] == READY
     assert set(first["result"]) == set(DEFAULT)
+    assert "project_id" not in first["result"]
+    assert "project_id" not in first["receipt"]
+
+
+@pytest.mark.parametrize(
+    "evidence",
+    [
+        READY,
+        _bound(READY, "other-film"),
+        _bound(READY, 7),
+        _bound(READY, True),
+        _bound(READY, None),
+        _bound(READY, "Film"),
+        {**_bound(READY), "extra": False},
+    ],
+)
+def test_identity_evidence_requires_exact_matching_valid_project_id(
+    tmp_path: Path, evidence: dict
+) -> None:
+    _write_evidence(tmp_path, evidence)
+    with pytest.raises(BridgeError, match="EVIDENCE_INVALID"):
+        _result(tmp_path)
 
 
 @pytest.mark.parametrize(
@@ -173,7 +199,7 @@ def test_identity_ready_evidence_enables_bulk_and_receipt_is_deterministic(tmp_p
 def test_identity_malformed_or_contradictory_evidence_fails_closed(
     tmp_path: Path, mutate
 ) -> None:
-    _write_evidence(tmp_path, mutate(READY))
+    _write_evidence(tmp_path, mutate(_bound(READY)))
     with pytest.raises(BridgeError, match="EVIDENCE_INVALID"):
         _result(tmp_path)
 
@@ -184,7 +210,7 @@ def test_identity_reader_rejects_symlink_nonregular_oversize_and_malformed_evide
     project = tmp_path / "film"
     project.mkdir()
     outside = tmp_path / "outside.json"
-    outside.write_text(json.dumps(READY), encoding="utf-8")
+    outside.write_text(json.dumps(_bound(READY)), encoding="utf-8")
     evidence = project / "identity_readiness.json"
 
     evidence.symlink_to(outside)
@@ -211,7 +237,7 @@ def test_identity_reader_rejects_symlink_nonregular_oversize_and_malformed_evide
 
 
 def test_identity_stdio_rejects_multiline_and_never_changes_project_tree(tmp_path: Path) -> None:
-    evidence = _write_evidence(tmp_path, READY)
+    evidence = _write_evidence(tmp_path, _bound(READY))
     before = evidence.read_bytes()
 
     valid = _run(json.dumps(_request()).encode(), tmp_path)
