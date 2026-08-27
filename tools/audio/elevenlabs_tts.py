@@ -34,7 +34,7 @@ class ElevenLabsTTS(BaseTool):
 
     dependencies = []
     install_instructions = (
-        "Set the ELEVENLABS_API_KEY environment variable:\n"
+        "Set the ELEVENLABS_API_KEY (or legacy ELEVEN_API_KEY) environment variable:\n"
         "  export ELEVENLABS_API_KEY=your_key_here\n"
         "Get a key at https://elevenlabs.io\n"
         "If fal_elevenlabs_tts is available, use it instead to access ElevenLabs "
@@ -136,8 +136,11 @@ class ElevenLabsTTS(BaseTool):
 
     DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"
 
+    def _get_api_key(self) -> str | None:
+        return os.environ.get("ELEVENLABS_API_KEY") or os.environ.get("ELEVEN_API_KEY")
+
     def get_status(self) -> ToolStatus:
-        if os.environ.get("ELEVENLABS_API_KEY"):
+        if self._get_api_key():
             return ToolStatus.AVAILABLE
         return ToolStatus.UNAVAILABLE
 
@@ -145,7 +148,7 @@ class ElevenLabsTTS(BaseTool):
         return round(len(inputs.get("text", "")) * 0.0003, 4)
 
     def execute(self, inputs: dict[str, Any]) -> ToolResult:
-        api_key = os.environ.get("ELEVENLABS_API_KEY")
+        api_key = self._get_api_key()
         if not api_key:
             return ToolResult(success=False, error="No ElevenLabs API key. " + self.install_instructions)
 

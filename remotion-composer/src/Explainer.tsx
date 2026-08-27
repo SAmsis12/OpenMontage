@@ -234,6 +234,10 @@ interface Cut {
   // Styling overrides
   backgroundColor?: string;
   cardBackgroundColor?: string; // Inner card surface (comparison); defaults to theme.surfaceColor
+  cardBorder?: string;
+  cardShadow?: string;
+  textShadow?: string;
+  textDirection?: "auto" | "ltr" | "rtl";
   backgroundImage?: string; // AI-generated or stock image rendered behind the component
   backgroundVideo?: string; // Video clip rendered behind the component (takes priority over backgroundImage)
   backgroundVideoStart?: number; // Seek position in seconds for background video (default 0)
@@ -593,7 +597,17 @@ const SceneRenderer: React.FC<{ cut: Cut; theme: ThemeConfig }> = ({ cut, theme 
   // Explicit component types — use theme-derived defaults for colors
   if (cut.type === "text_card" && cut.text) {
     return maybeWrapWithBg(
-      <TextCard text={cut.text} fontSize={cut.fontSize} color={textColor} backgroundColor={bgColor} />
+      <TextCard
+        text={cut.text}
+        fontSize={cut.fontSize}
+        color={textColor}
+        backgroundColor={bgColor}
+        cardBackgroundColor={cut.cardBackgroundColor}
+        cardBorder={cut.cardBorder}
+        cardShadow={cut.cardShadow}
+        textShadow={cut.textShadow}
+        textDirection={cut.textDirection}
+      />
     );
   }
   if (cut.type === "stat_card" && cut.stat) {

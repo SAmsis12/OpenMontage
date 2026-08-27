@@ -5,6 +5,11 @@ interface TextCardProps {
   fontSize?: number;
   color?: string;
   backgroundColor?: string;
+  cardBackgroundColor?: string;
+  cardBorder?: string;
+  cardShadow?: string;
+  textShadow?: string;
+  textDirection?: "auto" | "ltr" | "rtl";
 }
 
 export const TextCard: React.FC<TextCardProps> = ({
@@ -12,6 +17,11 @@ export const TextCard: React.FC<TextCardProps> = ({
   fontSize = 64,
   color = "#FFFFFF",
   backgroundColor = "#1F2937",
+  cardBackgroundColor = "transparent",
+  cardBorder = "none",
+  cardShadow = "none",
+  textShadow,
+  textDirection = "auto",
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -34,16 +44,29 @@ export const TextCard: React.FC<TextCardProps> = ({
       }}
     >
       <div
+        dir={textDirection}
         style={{
           opacity,
           transform: `scale(${scale})`,
           fontSize,
           color,
-          fontFamily: "Inter, system-ui, sans-serif",
+          background: cardBackgroundColor,
+          border: cardBorder,
+          borderRadius: cardBackgroundColor === "transparent" ? 0 : 24,
+          padding: cardBackgroundColor === "transparent" ? "0 18px" : "34px 44px",
+          unicodeBidi: "plaintext",
+          fontFamily: "Inter, Tahoma, Arial, system-ui, sans-serif",
           fontWeight: 700,
           textAlign: "center",
-          maxWidth: "80%",
-          lineHeight: 1.3,
+          maxWidth: "86%",
+          lineHeight: 1.35,
+          whiteSpace: "pre-line",
+          boxShadow: cardShadow,
+          textShadow:
+            textShadow ||
+            (cardBackgroundColor === "transparent"
+              ? "0 4px 18px rgba(0,0,0,0.78), 0 1px 2px rgba(0,0,0,0.9)"
+              : "0 1px 0 rgba(255, 255, 255, 0.4)"),
         }}
       >
         {text}
