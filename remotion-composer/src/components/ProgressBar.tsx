@@ -5,6 +5,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { ARABIC_FONT_STACK } from "../fonts";
 
 type ProgressAnimationStyle = "fill" | "pulse" | "step";
 
@@ -42,7 +43,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   segments,
   height = 32,
   borderRadius = 8,
-  fontFamily = "Inter, system-ui, sans-serif",
+  fontFamily = ARABIC_FONT_STACK,
   textColor = "#1F2937",
   labelFontSize = 36,
   percentageFontSize = 28,

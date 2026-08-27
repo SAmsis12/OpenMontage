@@ -5,6 +5,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { arabicFontStack, containsArabicScript } from "../fonts";
 
 type HeroTitleProps = {
   title: string;
@@ -38,7 +39,9 @@ export const HeroTitle: React.FC<HeroTitleProps> = ({
   const { fps } = useVideoConfig();
 
   // Staggered letter-by-letter spring
-  const titleChars = title.split("");
+  // Per-character spans break contextual Arabic shaping. Animate Arabic titles
+  // as one run while retaining the established Latin letter choreography.
+  const titleChars = containsArabicScript(title) ? [title] : title.split("");
 
   return (
     <AbsoluteFill
@@ -54,7 +57,7 @@ export const HeroTitle: React.FC<HeroTitleProps> = ({
           style={{
             fontSize: 72,
             fontWeight: 800,
-            fontFamily: "Space Grotesk, Inter, system-ui, sans-serif",
+            fontFamily: arabicFontStack("Space Grotesk, Inter, system-ui, sans-serif"),
             lineHeight: 1.2,
             display: "flex",
             justifyContent: "center",
@@ -101,7 +104,7 @@ export const HeroTitle: React.FC<HeroTitleProps> = ({
               fontSize: 28,
               fontWeight: 400,
               color: subtitleColor,
-              fontFamily: "Space Grotesk, Inter, system-ui, sans-serif",
+              fontFamily: arabicFontStack("Space Grotesk, Inter, system-ui, sans-serif"),
               letterSpacing: "0.1em",
               textTransform: "uppercase",
             }}

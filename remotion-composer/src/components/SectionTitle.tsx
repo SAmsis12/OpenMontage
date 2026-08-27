@@ -5,6 +5,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { arabicFontStack } from "../fonts";
 
 interface SectionTitleProps {
   title: string;
@@ -71,7 +72,7 @@ export const SectionTitle: React.FC<SectionTitleProps> = ({
             fontSize: 28,
             fontWeight: 700,
             color: textColor,
-            fontFamily: "Space Grotesk, Inter, system-ui, sans-serif",
+            fontFamily: arabicFontStack("Space Grotesk, Inter, system-ui, sans-serif"),
             letterSpacing: "0.05em",
             textTransform: "uppercase",
             textShadow: "0 2px 8px rgba(0,0,0,0.6)",
@@ -85,7 +86,7 @@ export const SectionTitle: React.FC<SectionTitleProps> = ({
               fontSize: 18,
               fontWeight: 400,
               color: accentColor,
-              fontFamily: "Space Grotesk, Inter, system-ui, sans-serif",
+              fontFamily: arabicFontStack("Space Grotesk, Inter, system-ui, sans-serif"),
               marginTop: 4,
               opacity: spring({
                 frame: frame - 8,

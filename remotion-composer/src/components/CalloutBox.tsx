@@ -5,6 +5,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { ARABIC_FONT_STACK, arabicFontStack } from "../fonts";
 
 type CalloutType = "info" | "warning" | "tip" | "quote";
 
@@ -40,7 +41,7 @@ export const CalloutBox: React.FC<CalloutBoxProps> = ({
   borderColor,
   backgroundColor,
   textColor = "#1F2937",
-  fontFamily = "Inter, system-ui, sans-serif",
+  fontFamily = ARABIC_FONT_STACK,
   fontSize = 32,
   titleFontSize = 38,
   containerBackgroundColor = "#FFFFFF",
@@ -162,7 +163,7 @@ export const CalloutBox: React.FC<CalloutBoxProps> = ({
               opacity: iconOpacity,
               transform: `scale(${iconScale})`,
               color: isQuote ? resolvedBorder : undefined,
-              fontFamily: isQuote ? "Georgia, serif" : undefined,
+              fontFamily: isQuote ? arabicFontStack("Georgia, serif") : undefined,
               fontWeight: isQuote ? 700 : undefined,
               marginTop: isQuote ? -12 : 0,
             }}
@@ -195,7 +196,7 @@ export const CalloutBox: React.FC<CalloutBoxProps> = ({
             )}
             <div
               style={{
-                fontFamily: isQuote ? "Georgia, serif" : fontFamily,
+                fontFamily: isQuote ? arabicFontStack("Georgia, serif") : fontFamily,
                 fontWeight: isQuote ? 400 : 400,
                 fontStyle: isQuote ? "italic" : "normal",
                 fontSize,

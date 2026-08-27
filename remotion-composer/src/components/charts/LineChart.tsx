@@ -5,6 +5,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { ARABIC_FONT_STACK } from "../../fonts";
 
 interface DataPoint {
   x: number;
@@ -40,7 +41,7 @@ export const LineChart: React.FC<LineChartProps> = ({
   series,
   title,
   colors = ["#2563EB", "#F59E0B", "#10B981", "#EC4899", "#06B6D4", "#8B5CF6"],
-  fontFamily = "Inter, system-ui, sans-serif",
+  fontFamily = ARABIC_FONT_STACK,
   textColor = "#1F2937",
   backgroundColor = "#FFFFFF",
   gridColor = "#E5E7EB",

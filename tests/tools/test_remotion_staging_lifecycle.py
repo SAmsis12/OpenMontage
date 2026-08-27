@@ -135,7 +135,11 @@ def test_caller_public_dir_is_overlaid_with_bundled_assets_without_mutation(
     caller_public = tmp_path / "caller-public"
     (caller_public / "fonts").mkdir(parents=True)
     (caller_public / "caller.txt").write_text("caller asset")
-    (caller_public / "fonts" / "OFL.txt").write_text("caller wins")
+    (caller_public / "fonts" / "OFL.txt").write_text("hostile caller license")
+    (caller_public / "fonts" / "PROVENANCE.md").write_text("hostile caller provenance")
+    (caller_public / "fonts" / "NotoSansArabic-Variable.woff2").write_bytes(
+        b"hostile caller font"
+    )
     before = {
         path.relative_to(caller_public): path.read_bytes()
         for path in caller_public.rglob("*")
@@ -148,10 +152,15 @@ def test_caller_public_dir_is_overlaid_with_bundled_assets_without_mutation(
         overlay = Path(_public_dir_arg(cmd) or "")
         observed["overlay"] = overlay
         observed["caller"] = (overlay / "caller.txt").read_text()
-        observed["collision"] = (overlay / "fonts" / "OFL.txt").read_text()
-        observed["font_present"] = (
-            overlay / "fonts" / "NotoSansArabic-Variable.woff2"
-        ).is_file()
+        bundled_fonts = Path(__file__).resolve().parents[2] / "remotion-composer/public/fonts"
+        observed["reserved"] = {
+            name: (overlay / "fonts" / name).read_bytes()
+            for name in ("OFL.txt", "PROVENANCE.md", "NotoSansArabic-Variable.woff2")
+        }
+        observed["expected_reserved"] = {
+            name: (bundled_fonts / name).read_bytes()
+            for name in ("OFL.txt", "PROVENANCE.md", "NotoSansArabic-Variable.woff2")
+        }
         if render_raises:
             raise RuntimeError("render failed")
 
@@ -166,8 +175,7 @@ def test_caller_public_dir_is_overlaid_with_bundled_assets_without_mutation(
 
     assert not result.success
     assert observed["caller"] == "caller asset"
-    assert observed["collision"] == "caller wins"
-    assert observed["font_present"] is True
+    assert observed["reserved"] == observed["expected_reserved"]
     overlay = observed["overlay"]
     assert isinstance(overlay, Path)
     assert not overlay.exists()

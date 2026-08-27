@@ -897,6 +897,35 @@ class VideoCompose(BaseTool):
                 with contextlib.suppress(OSError):
                     shutil.copy2(entry, destination)
 
+    _RESERVED_BUNDLED_PUBLIC_PATHS = (
+        Path("fonts/NotoSansArabic-Variable.woff2"),
+        Path("fonts/OFL.txt"),
+        Path("fonts/PROVENANCE.md"),
+    )
+
+    @staticmethod
+    def _stage_reserved_bundled_public_assets(
+        bundled_public_root: Path, staging_root: Path
+    ) -> None:
+        """Copy trusted font evidence last so caller overlays cannot replace it."""
+        for relative_path in VideoCompose._RESERVED_BUNDLED_PUBLIC_PATHS:
+            source = bundled_public_root / relative_path
+            if not source.is_file():
+                raise FileNotFoundError(f"Missing reserved bundled asset: {source}")
+            destination = staging_root / relative_path
+            parent = destination.parent
+            if parent.exists() and not parent.is_dir():
+                if parent.is_symlink() or parent.is_file():
+                    parent.unlink()
+                else:
+                    shutil.rmtree(parent)
+            parent.mkdir(parents=True, exist_ok=True)
+            if destination.is_symlink() or destination.is_file():
+                destination.unlink()
+            elif destination.exists():
+                shutil.rmtree(destination)
+            shutil.copy2(source, destination)
+
     @staticmethod
     def _stage_remotion_media(value: Any, public_dir: Path) -> int:
         """Copy local media references into a Remotion public dir in-place.
@@ -2033,7 +2062,8 @@ class VideoCompose(BaseTool):
         # Always render through an invocation-owned overlay. Passing a caller's
         # directory directly would mutate it while staging local media and would
         # hide bundled assets (including deterministic fonts). Caller assets are
-        # mirrored first and therefore win collisions with bundled public files.
+        # mirrored first and win ordinary collisions. Reserved bundled font,
+        # license, and provenance paths are copied last and always win.
         public_dir = output_path.parent / (
             f".remotion-public-{output_path.stem}-{secrets.token_hex(4)}"
         )
@@ -2047,6 +2077,7 @@ class VideoCompose(BaseTool):
             if requested_public_source is not None:
                 self._mirror_public_dir(requested_public_source, public_dir)
             self._mirror_public_dir(composer_dir / "public", public_dir)
+            self._stage_reserved_bundled_public_assets(composer_dir / "public", public_dir)
             staged_count = self._stage_remotion_media(props, public_dir)
 
             # Write the fully adapted/staged props, never the original cut payload.

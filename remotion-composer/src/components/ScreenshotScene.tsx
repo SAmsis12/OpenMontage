@@ -7,6 +7,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { resolveAsset } from "../lib/resolveAsset";
+import { ARABIC_FONT_STACK } from "../fonts";
 
 /**
  * ScreenshotScene — approach-1 synthetic UI demo.
@@ -383,7 +384,7 @@ const OverlayForStep: React.FC<OverlayProps> = ({
           display: "flex",
           alignItems: "center",
           paddingLeft: Math.round(rect.w * 0.012),
-          fontFamily: "Inter, -apple-system, sans-serif",
+          fontFamily: ARABIC_FONT_STACK,
           fontSize: fontPx,
           color: step.color ?? "#E5E7EB",
           pointerEvents: "none",
@@ -462,7 +463,7 @@ const OverlayForStep: React.FC<OverlayProps> = ({
           border: `1px solid ${border}`,
           borderRadius: Math.round(rect.w * 0.008),
           padding: `${Math.round(rect.h * 0.015)}px ${Math.round(rect.w * 0.012)}px`,
-          fontFamily: "Inter, -apple-system, sans-serif",
+          fontFamily: ARABIC_FONT_STACK,
           fontSize: fontPx,
           color: "#F1F5F9",
           lineHeight: 1.5,
@@ -635,7 +636,7 @@ const OverlayForStep: React.FC<OverlayProps> = ({
           width: maxW,
           background: color,
           color: "#0B0F1A",
-          fontFamily: "Inter, -apple-system, sans-serif",
+          fontFamily: ARABIC_FONT_STACK,
           fontWeight: 600,
           fontSize: fontPx,
           lineHeight: 1.35,

@@ -59,10 +59,48 @@ def test_arabic_font_is_bundled_loaded_and_used_by_text_surfaces() -> None:
     assert package["dependencies"]["@remotion/fonts"] == "^4.0.484"
     assert 'staticFile("fonts/NotoSansArabic-Variable.woff2")' in loader
     assert "@remotion/fonts" in loader
+    assert "unicodeRange:" in loader
     assert "ARABIC_FONT_STACK" in text_card
     assert "fontFamily={ARABIC_FONT_STACK}" in explainer
+    assert "arabicFontStack(theme.headingFont || fontFamily)" in explainer
     assert "fonts.googleapis.com" not in loader
     assert "fonts.gstatic.com" not in loader
+
+
+def test_every_arabic_capable_explainer_surface_uses_the_bundled_font_stack() -> None:
+    """Representative scene, overlay, chart, and utility text surfaces are covered."""
+    composer = REPO_ROOT / "remotion-composer/src"
+    surfaces = (
+        "components/TextCard.tsx",
+        "components/StatCard.tsx",
+        "components/CalloutBox.tsx",
+        "components/ComparisonCard.tsx",
+        "components/ProgressBar.tsx",
+        "components/SectionTitle.tsx",
+        "components/StatReveal.tsx",
+        "components/HeroTitle.tsx",
+        "components/ProviderChip.tsx",
+        "components/CaptionOverlay.tsx",
+        "components/TerminalScene.tsx",
+        "components/ScreenshotScene.tsx",
+        "components/charts/BarChart.tsx",
+        "components/charts/LineChart.tsx",
+        "components/charts/PieChart.tsx",
+        "components/charts/KPIGrid.tsx",
+    )
+
+    for relative in surfaces:
+        source = (composer / relative).read_text(encoding="utf-8")
+        assert ("ARABIC_FONT" in source or "arabicFontStack" in source), (\
+            f"{relative} bypasses the bundled Arabic font"\
+        )
+
+
+def test_hero_title_does_not_split_arabic_into_unjoinable_characters() -> None:
+    source = (
+        REPO_ROOT / "remotion-composer/src/components/HeroTitle.tsx"
+    ).read_text(encoding="utf-8")
+    assert "containsArabicScript(title) ? [title] : title.split(\"\")" in source
 
 
 def test_elevenlabs_accepts_official_and_legacy_key_names(monkeypatch) -> None:
