@@ -1,4 +1,5 @@
 import { AbsoluteFill, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { ARABIC_FONT_STACK } from "../fonts";
 
 interface TextCardProps {
   text: string;
@@ -55,7 +56,7 @@ export const TextCard: React.FC<TextCardProps> = ({
           borderRadius: cardBackgroundColor === "transparent" ? 0 : 24,
           padding: cardBackgroundColor === "transparent" ? "0 18px" : "34px 44px",
           unicodeBidi: "plaintext",
-          fontFamily: "Inter, Tahoma, Arial, system-ui, sans-serif",
+          fontFamily: ARABIC_FONT_STACK,
           fontWeight: 700,
           textAlign: "center",
           maxWidth: "86%",

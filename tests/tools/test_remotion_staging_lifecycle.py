@@ -125,3 +125,55 @@ def test_cleanup_leaves_preexisting_dirs_alone(tmp_path, render):
     tool._remotion_render(_inputs(tmp_path, source))
 
     assert (squatter / "keep.txt").read_text() == "not ours"
+
+
+@pytest.mark.parametrize("render_raises", [False, True])
+def test_caller_public_dir_is_overlaid_with_bundled_assets_without_mutation(
+    tmp_path, monkeypatch, render_raises
+):
+    monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
+    caller_public = tmp_path / "caller-public"
+    (caller_public / "fonts").mkdir(parents=True)
+    (caller_public / "caller.txt").write_text("caller asset")
+    (caller_public / "fonts" / "OFL.txt").write_text("caller wins")
+    before = {
+        path.relative_to(caller_public): path.read_bytes()
+        for path in caller_public.rglob("*")
+        if path.is_file()
+    }
+    observed: dict[str, object] = {}
+    tool = VideoCompose()
+
+    def fake_run(cmd, **kwargs):
+        overlay = Path(_public_dir_arg(cmd) or "")
+        observed["overlay"] = overlay
+        observed["caller"] = (overlay / "caller.txt").read_text()
+        observed["collision"] = (overlay / "fonts" / "OFL.txt").read_text()
+        observed["font_present"] = (
+            overlay / "fonts" / "NotoSansArabic-Variable.woff2"
+        ).is_file()
+        if render_raises:
+            raise RuntimeError("render failed")
+
+    monkeypatch.setattr(tool, "run_command", fake_run)
+    result = tool._remotion_render(
+        {
+            "output_path": str(tmp_path / "renders" / "final.mp4"),
+            "public_dir": str(caller_public),
+            "composition_data": {"renderer_family": "explainer-data", "cuts": []},
+        }
+    )
+
+    assert not result.success
+    assert observed["caller"] == "caller asset"
+    assert observed["collision"] == "caller wins"
+    assert observed["font_present"] is True
+    overlay = observed["overlay"]
+    assert isinstance(overlay, Path)
+    assert not overlay.exists()
+    after = {
+        path.relative_to(caller_public): path.read_bytes()
+        for path in caller_public.rglob("*")
+        if path.is_file()
+    }
+    assert after == before

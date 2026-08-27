@@ -33,6 +33,7 @@ import { ProviderChip } from "./components/ProviderChip";
 import { resolveAsset } from "./lib/resolveAsset";
 import type { ParticleType } from "./components/ParticleOverlay";
 import { resolveTheme, type ThemeConfig, DEFAULT_THEME } from "./Root";
+import { ARABIC_FONT_STACK } from "./fonts";
 
 // Load Space Grotesk font for cinematic typography
 const { fontFamily } = loadFont("normal", {
@@ -892,6 +893,7 @@ export const Explainer: React.FC<ExplainerProps> = (props) => {
           words={captions}
           wordsPerPage={6}
           fontSize={42}
+          fontFamily={ARABIC_FONT_STACK}
           color={theme.textColor}
           highlightColor={theme.captionHighlightColor}
           backgroundColor={theme.captionBackgroundColor}

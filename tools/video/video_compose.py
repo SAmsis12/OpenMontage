@@ -747,7 +747,9 @@ class VideoCompose(BaseTool):
     }
 
     @classmethod
-    def _get_composition_id(cls, renderer_family: str) -> str:
+    def _get_composition_id(
+        cls, renderer_family: str, profile_name: str | None = None
+    ) -> str:
         """Resolve renderer_family to Remotion composition ID.
 
         Raises ValueError if renderer_family is not recognized — the caller
@@ -760,6 +762,14 @@ class VideoCompose(BaseTool):
                 f"Valid families: {sorted(cls.RENDERER_FAMILY_MAP)}. "
                 f"Set renderer_family at proposal stage."
             )
+        if comp == "Explainer" and profile_name:
+            try:
+                from lib.media_profiles import AspectRatio, get_profile
+
+                if get_profile(profile_name).aspect_ratio == AspectRatio.PORTRAIT_9_16:
+                    return "ExplainerVertical"
+            except (ImportError, ValueError):
+                pass
         return comp
 
     @staticmethod
@@ -861,30 +871,31 @@ class VideoCompose(BaseTool):
 
     @staticmethod
     def _mirror_public_dir(source_root: Path, staging_root: Path) -> None:
-        """Link the real ``public/`` tree into a render-scoped ``--public-dir``.
+        """Merge a public tree into a render-scoped ``--public-dir`` read-only.
 
-        ``--public-dir`` REPLACES Remotion's default public dir for the render.
-        Assets that earlier pipeline stages already staged into
-        ``remotion-composer/public/`` — ``anime_scene.images[]``,
-        ``screenshot_scene.backgroundImage``, demo-props fixtures, all
-        documented as public/-relative ``staticFile()`` paths — would therefore
-        404 as soon as we point the render at our own dir. Symlink each
-        top-level entry in (read-only; nothing is written back to
-        *source_root*), falling back to a copy where symlinks aren't permitted
-        (e.g. Windows without developer mode).
+        Existing overlay entries win. Directories are materialized rather than
+        symlinked so a later merge can add missing children without writing
+        through a symlink into either source tree. Files are symlinked when
+        possible and copied on platforms where symlinks are unavailable.
         """
         if not source_root.is_dir():
             return
         staging_root.mkdir(parents=True, exist_ok=True)
         for entry in source_root.iterdir():
-            link = staging_root / entry.name
-            if link.exists() or link.is_symlink():
+            destination = staging_root / entry.name
+            if entry.is_dir():
+                if destination.exists() and not destination.is_dir():
+                    continue
+                destination.mkdir(parents=True, exist_ok=True)
+                VideoCompose._mirror_public_dir(entry, destination)
+                continue
+            if destination.exists() or destination.is_symlink():
                 continue
             try:
-                link.symlink_to(entry, target_is_directory=entry.is_dir())
+                destination.symlink_to(entry)
             except OSError:
                 with contextlib.suppress(OSError):
-                    (shutil.copytree if entry.is_dir() else shutil.copy2)(entry, link)
+                    shutil.copy2(entry, destination)
 
     @staticmethod
     def _stage_remotion_media(value: Any, public_dir: Path) -> int:
@@ -1993,7 +2004,8 @@ class VideoCompose(BaseTool):
         # Route to the correct Remotion composition based on renderer_family.
         # This prevents all pipelines from collapsing into the Explainer visual grammar.
         renderer_family = (composition_data or {}).get("renderer_family", "explainer-data")
-        composition_id = self._get_composition_id(renderer_family)
+        profile_name = inputs.get("profile")
+        composition_id = self._get_composition_id(renderer_family, profile_name)
 
         if composition_id == "CinematicRenderer":
             if not props.get("scenes") and props.get("cuts"):
@@ -2006,42 +2018,36 @@ class VideoCompose(BaseTool):
                 )
 
         requested_public_dir = inputs.get("public_dir")
-        cleanup_public_dir = False
-        public_dir: Path | None = None
+        requested_public_source: Path | None = None
         if requested_public_dir:
-            public_dir = Path(requested_public_dir).resolve()
-            if not public_dir.is_dir():
+            requested_public_source = Path(requested_public_dir).resolve()
+            if not requested_public_source.is_dir():
                 return ToolResult(
                     success=False,
-                    error=f"Remotion public_dir does not exist or is not a directory: {public_dir}",
+                    error=(
+                        "Remotion public_dir does not exist or is not a directory: "
+                        f"{requested_public_source}"
+                    ),
                 )
-        else:
-            # Unique per render. A name derived only from the output stem is
-            # shared by every render of that output: concurrent renders
-            # overwrite each other's staged media and the first to finish
-            # deletes the other's inputs, and cleanup would also erase a
-            # pre-existing directory that happened to match. The random suffix
-            # means the dir we delete is always one this invocation created.
-            public_dir = output_path.parent / f".remotion-public-{output_path.stem}-{secrets.token_hex(4)}"
-            cleanup_public_dir = True
+
+        # Always render through an invocation-owned overlay. Passing a caller's
+        # directory directly would mutate it while staging local media and would
+        # hide bundled assets (including deterministic fonts). Caller assets are
+        # mirrored first and therefore win collisions with bundled public files.
+        public_dir = output_path.parent / (
+            f".remotion-public-{output_path.stem}-{secrets.token_hex(4)}"
+        )
 
         # Everything from staging onward is guarded, so a failure during props
         # writing or command setup — not just during the render — still removes
         # the staged user media instead of leaving it on disk.
         props_path = output_path.parent / ".remotion_props.json"
         staged_count = 0
-        profile_name = inputs.get("profile")
         try:
+            if requested_public_source is not None:
+                self._mirror_public_dir(requested_public_source, public_dir)
+            self._mirror_public_dir(composer_dir / "public", public_dir)
             staged_count = self._stage_remotion_media(props, public_dir)
-            if not staged_count and cleanup_public_dir:
-                public_dir = None
-            elif cleanup_public_dir:
-                # We are about to override Remotion's public dir with our own, so
-                # mirror the real one in — otherwise assets already staged into
-                # remotion-composer/public/ by earlier pipeline stages 404.
-                # Only for the dir we created and will delete; a caller-supplied
-                # public_dir is their contract to populate, so leave it untouched.
-                self._mirror_public_dir(composer_dir / "public", public_dir)
 
             # Write the fully adapted/staged props, never the original cut payload.
             with open(props_path, "w", encoding="utf-8") as f:
@@ -2059,8 +2065,7 @@ class VideoCompose(BaseTool):
                 # API Remotion recommends for file paths and is cross-platform safe.
                 f"--props={props_path}",
             ]
-            if public_dir is not None:
-                cmd.append(f"--public-dir={public_dir}")
+            cmd.append(f"--public-dir={public_dir}")
 
             # Apply media profile dimensions
             if profile_name:
@@ -2115,7 +2120,7 @@ class VideoCompose(BaseTool):
         finally:
             if props_path.exists():
                 props_path.unlink()
-            if cleanup_public_dir and public_dir is not None and public_dir.exists():
+            if public_dir.exists():
                 shutil.rmtree(public_dir, ignore_errors=True)
 
         if not output_path.exists():
