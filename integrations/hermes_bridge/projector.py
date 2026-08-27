@@ -13,9 +13,16 @@ from lib.pipeline_loader import (
 )
 
 from .contract import BridgeError
-from .readers import ProjectEvidence, read_project
+from .readers import ProjectEvidence, read_identity_readiness, read_project
 
-OPERATIONS = ["capabilities", "status", "preview", "cost", "approval"]
+OPERATIONS = [
+    "capabilities",
+    "status",
+    "preview",
+    "cost",
+    "approval",
+    "identity_readiness",
+]
 PROJECT_LAYOUT = [
     "artifacts",
     "assets/images",
@@ -26,6 +33,23 @@ PROJECT_LAYOUT = [
 ]
 PIPELINE_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$")
 STATUS_VALUES = {"pending", "in_progress", "awaiting_human", "completed", "failed"}
+IDENTITY_KEYS = {
+    "contract_version",
+    "foundation_status",
+    "world_sample_approved",
+    "character_world_sample_approved",
+    "reviewer_approved",
+    "bulk_generation",
+}
+FOUNDATION_STATUSES = {"draft", "review_pending", "foundation_ready", "rejected"}
+IDENTITY_DEFAULT = {
+    "contract_version": "1.0",
+    "foundation_status": "draft",
+    "world_sample_approved": False,
+    "character_world_sample_approved": False,
+    "reviewer_approved": False,
+    "bulk_generation": False,
+}
 
 
 def _number(value: object, *, field: str) -> float:
@@ -249,6 +273,38 @@ def _status_projection(evidence: ProjectEvidence) -> tuple[dict[str, Any], dict[
 def status_result(projects_root: Path, project_id: str) -> dict[str, Any]:
     evidence = read_project(projects_root, project_id)
     return _status_projection(evidence)[0]
+
+
+def identity_readiness_result(projects_root: Path, project_id: str) -> dict[str, Any]:
+    evidence = read_identity_readiness(projects_root, project_id)
+    if evidence is None:
+        return dict(IDENTITY_DEFAULT)
+    if set(evidence) != IDENTITY_KEYS:
+        raise BridgeError("EVIDENCE_INVALID")
+    if (
+        evidence["contract_version"] != "1.0"
+        or not isinstance(evidence["foundation_status"], str)
+        or evidence["foundation_status"] not in FOUNDATION_STATUSES
+        or any(
+            type(evidence[key]) is not bool
+            for key in (
+                "world_sample_approved",
+                "character_world_sample_approved",
+                "reviewer_approved",
+                "bulk_generation",
+            )
+        )
+    ):
+        raise BridgeError("EVIDENCE_INVALID")
+    prerequisites = (
+        evidence["foundation_status"] == "foundation_ready"
+        and evidence["world_sample_approved"]
+        and evidence["character_world_sample_approved"]
+        and evidence["reviewer_approved"]
+    )
+    if evidence["bulk_generation"] is not prerequisites:
+        raise BridgeError("EVIDENCE_INVALID")
+    return {key: evidence[key] for key in IDENTITY_DEFAULT}
 
 
 def preview_result(projects_root: Path, arguments: dict[str, Any]) -> dict[str, Any]:

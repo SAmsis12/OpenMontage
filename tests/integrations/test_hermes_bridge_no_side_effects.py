@@ -69,6 +69,7 @@ def test_bridge_never_discovers_tools_reads_dotenv_calls_network_shell_or_writes
         },
         "cost": {"project_id": "film"},
         "approval": {"project_id": "film", "stage": "proposal"},
+        "identity_readiness": {"project_id": "film"},
     }
     for operation, arguments in calls.items():
         response = handle_request(

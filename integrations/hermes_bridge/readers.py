@@ -45,6 +45,8 @@ def _flags(*, directory: bool = False) -> int:
     value |= getattr(os, "O_NOFOLLOW", 0)
     if directory:
         value |= getattr(os, "O_DIRECTORY", 0)
+    else:
+        value |= getattr(os, "O_NONBLOCK", 0)
     return value
 
 
@@ -100,6 +102,41 @@ def _read_json_at(
     if not isinstance(value, dict):
         raise BridgeError("EVIDENCE_INVALID")
     return value
+
+
+def read_identity_readiness(
+    projects_root: Path,
+    project_id: str,
+    *,
+    limits: EvidenceLimits | None = None,
+) -> dict[str, Any] | None:
+    """Read the one fixed identity-readiness evidence file, if present."""
+    validate_project_id(project_id)
+    limits = limits or EvidenceLimits()
+    try:
+        root_fd = os.open(os.fspath(projects_root), _flags(directory=True))
+    except FileNotFoundError:
+        return None
+    except OSError as exc:
+        raise _public_open_error(exc) from None
+    try:
+        try:
+            project_fd = os.open(project_id, _flags(directory=True), dir_fd=root_fd)
+        except FileNotFoundError:
+            return None
+        except OSError as exc:
+            raise _public_open_error(exc) from None
+    finally:
+        os.close(root_fd)
+    try:
+        return _read_json_at(
+            project_fd,
+            "identity_readiness.json",
+            limits=limits,
+            aggregate=[0],
+        )
+    finally:
+        os.close(project_fd)
 
 
 def read_project(

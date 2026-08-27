@@ -20,7 +20,8 @@
             "status",
             "preview",
             "cost",
-            "approval"
+            "approval",
+            "identity_readiness"
           ]
         },
         "ok": {
@@ -95,7 +96,8 @@
                 "status",
                 "preview",
                 "cost",
-                "approval"
+                "approval",
+                "identity_readiness"
               ]
             },
             "guarantees": {
@@ -810,6 +812,123 @@
             "mutation"
           ],
           "additionalProperties": false
+        },
+        "receipt": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "dry_run"
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "persisted": {
+              "const": false
+            },
+            "execution": {
+              "const": "not_started"
+            },
+            "approval_granted": {
+              "const": false
+            }
+          },
+          "required": [
+            "kind",
+            "digest",
+            "persisted",
+            "execution",
+            "approval_granted"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "version",
+        "request_id",
+        "operation",
+        "ok",
+        "result",
+        "receipt"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "1.0"
+        },
+        "request_id": {
+          "type": "string",
+          "pattern": "^(unknown|[A-Za-z0-9][A-Za-z0-9._:-]{0,127})$"
+        },
+        "operation": {
+          "const": "identity_readiness"
+        },
+        "ok": {
+          "const": true
+        },
+        "result": {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0"
+            },
+            "foundation_status": {
+              "enum": [
+                "draft",
+                "review_pending",
+                "foundation_ready",
+                "rejected"
+              ]
+            },
+            "world_sample_approved": {
+              "type": "boolean"
+            },
+            "character_world_sample_approved": {
+              "type": "boolean"
+            },
+            "reviewer_approved": {
+              "type": "boolean"
+            },
+            "bulk_generation": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "contract_version",
+            "foundation_status",
+            "world_sample_approved",
+            "character_world_sample_approved",
+            "reviewer_approved",
+            "bulk_generation"
+          ],
+          "additionalProperties": false,
+          "oneOf": [
+            {
+              "properties": {
+                "foundation_status": {"const": "foundation_ready"},
+                "world_sample_approved": {"const": true},
+                "character_world_sample_approved": {"const": true},
+                "reviewer_approved": {"const": true},
+                "bulk_generation": {"const": true}
+              }
+            },
+            {
+              "properties": {
+                "bulk_generation": {"const": false}
+              },
+              "not": {
+                "properties": {
+                  "foundation_status": {"const": "foundation_ready"},
+                  "world_sample_approved": {"const": true},
+                  "character_world_sample_approved": {"const": true},
+                  "reviewer_approved": {"const": true}
+                }
+              }
+            }
+          ]
         },
         "receipt": {
           "type": "object",

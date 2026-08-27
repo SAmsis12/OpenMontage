@@ -19,7 +19,8 @@
             "status",
             "preview",
             "cost",
-            "approval"
+            "approval",
+            "identity_readiness"
           ]
         },
         "arguments": {
@@ -41,6 +42,19 @@
       "additionalProperties": false
     },
     "statusArgs": {
+      "type": "object",
+      "properties": {
+        "project_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+        }
+      },
+      "required": [
+        "project_id"
+      ],
+      "additionalProperties": false
+    },
+    "identityReadinessArgs": {
       "type": "object",
       "properties": {
         "project_id": {
@@ -221,6 +235,16 @@
             },
             "arguments": {
               "$ref": "#/$defs/approvalArgs"
+            }
+          }
+        },
+        {
+          "properties": {
+            "operation": {
+              "const": "identity_readiness"
+            },
+            "arguments": {
+              "$ref": "#/$defs/identityReadinessArgs"
             }
           }
         }

@@ -13,7 +13,14 @@ import jsonschema
 PROTOCOL_VERSION = "1.0"
 INPUT_LIMIT_BYTES = 65_536
 OUTPUT_LIMIT_BYTES = 131_072
-OPERATIONS = ("capabilities", "status", "preview", "cost", "approval")
+OPERATIONS = (
+    "capabilities",
+    "status",
+    "preview",
+    "cost",
+    "approval",
+    "identity_readiness",
+)
 REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 PROJECT_ID_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$")
 NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$")
@@ -66,7 +73,7 @@ def _validate_arguments(operation: str, value: object) -> dict[str, Any]:
         raise BridgeError("INVALID_REQUEST")
     if operation == "capabilities":
         return _exact(value, set())
-    if operation == "status":
+    if operation in {"status", "identity_readiness"}:
         arguments = _exact(value, {"project_id"})
         _project_id(arguments)
         return arguments
@@ -193,6 +200,7 @@ def handle_request(request: Request, *, projects_root: Path) -> dict[str, Any]:
         approval_result,
         capabilities_result,
         cost_result,
+        identity_readiness_result,
         preview_result,
         status_result,
     )
@@ -207,6 +215,10 @@ def handle_request(request: Request, *, projects_root: Path) -> dict[str, Any]:
         result = cost_result(projects_root, request.arguments)
     elif request.operation == "approval":
         result = approval_result(projects_root, request.arguments)
+    elif request.operation == "identity_readiness":
+        result = identity_readiness_result(
+            projects_root, request.arguments["project_id"]
+        )
     else:  # pragma: no cover - parse_request closes this branch
         raise BridgeError("INVALID_REQUEST")
     response = make_success(request, result)

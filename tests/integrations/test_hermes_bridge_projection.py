@@ -48,7 +48,14 @@ def _tree_snapshot(root: Path) -> dict[str, bytes]:
 def test_capabilities_are_static_read_only_and_pipeline_catalog_is_allowlisted(tmp_path: Path) -> None:
     result = _result(tmp_path, "capabilities", {})
     assert result["mode"] == "read_only_dry_run"
-    assert result["operations"] == ["capabilities", "status", "preview", "cost", "approval"]
+    assert result["operations"] == [
+        "capabilities",
+        "status",
+        "preview",
+        "cost",
+        "approval",
+        "identity_readiness",
+    ]
     assert result["guarantees"] == {
         "writes": False,
         "tool_execution": False,
@@ -195,7 +202,10 @@ def test_missing_cost_evidence_does_not_invent_estimate(tmp_path: Path) -> None:
     }
 
 
-@pytest.mark.parametrize("operation", ["capabilities", "status", "preview", "cost", "approval"])
+@pytest.mark.parametrize(
+    "operation",
+    ["capabilities", "status", "preview", "cost", "approval", "identity_readiness"],
+)
 def test_all_operations_leave_project_tree_byte_identical(tmp_path: Path, operation: str) -> None:
     _project(tmp_path)
     arguments = {
@@ -209,6 +219,7 @@ def test_all_operations_leave_project_tree_byte_identical(tmp_path: Path, operat
         },
         "cost": {"project_id": "film"},
         "approval": {"project_id": "film", "stage": "proposal"},
+        "identity_readiness": {"project_id": "film"},
     }[operation]
     before = _tree_snapshot(tmp_path)
     _result(tmp_path, operation, arguments)
